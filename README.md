@@ -9,6 +9,7 @@
 The **Piloterr Best Buy Scraper API** lets you extract public data from Best Buy as **clean, structured JSON** — no proxies, headless browsers or HTML parsing to maintain. Endpoints available in production:
 
 - **Best Buy Product API** — Get a Best Buy US or Canada product page: title, price, brand, stock, images, categories and specs via browser rendering.
+- **Best Buy Reviews API** — Get customer reviews for a Best Buy product URL: rating, review text, author, photos and pagination.
 - **Best Buy Search API** — Search Best Buy US or Canada by keyword or search URL.
 
 Use it for price monitoring, assortment tracking, competitor analysis, product research or catalog enrichment.
@@ -16,12 +17,14 @@ Use it for price monitoring, assortment tracking, competitor analysis, product r
 | Endpoint | Path | Credits | What you get |
 |---|---|---|---|
 | [Best Buy Product API](#best-buy-product-api) | `/v2/bestbuy/product` | 2 | Get a Best Buy US or Canada product page |
+| [Best Buy Reviews API](#best-buy-reviews-api) | `/v2/bestbuy/product/reviews` | 2 | Get customer reviews for a Best Buy product URL |
 | [Best Buy Search API](#best-buy-search-api) | `/v2/bestbuy/search` | 2 | Search Best Buy US or Canada by keyword or search URL. Returns product listings with price, rating and pagination via browser rendering. |
 
 ## Table of contents
 
 - [How it works](#how-it-works)
 - [Best Buy Product API](#best-buy-product-api)
+- [Best Buy Reviews API](#best-buy-reviews-api)
 - [Best Buy Search API](#best-buy-search-api)
 - [Code examples in other languages](#code-examples-in-other-languages)
 - [Practical use cases](#practical-use-cases)
@@ -175,6 +178,167 @@ Example response from the API reference, abridged — real values depend on the 
 | `specifications[].name` | string |  |
 | `specifications[].value` | string |  |
 
+## Best Buy Reviews API
+
+Get customer reviews for a Best Buy product URL: rating, review text, author, photos and pagination.
+
+`GET | POST https://api.piloterr.com/v2/bestbuy/product/reviews` · **2 credits per request** · [Full reference](https://app.piloterr.com/openapi)
+
+### Request parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `query` | string | ✅ | Best Buy product URL or reviews URL. |
+| `page` | number | — | Page number, starting at 1. Default 1. A value above 1 overrides page on the Best Buy URL. If this stays at 1, a page already on the URL is kept. |
+| `return_page_source` | boolean | — | When true, return the rendered HTML instead of JSON. Default false. |
+
+### Python example
+
+```python
+import json
+import os
+import requests
+
+response = requests.get(
+    "https://api.piloterr.com/v2/bestbuy/product/reviews",
+    headers={"x-api-key": os.environ["PILOTERR_API_KEY"]},
+    params={
+        "query": "https://www.bestbuy.com/product/google-nest-doorbell-wired-3rd-gen-latest-model-2k-video-and-gemini-hazel/J39TC8J8W5/sku/12104931/reviews",
+    },
+    timeout=60,
+)
+response.raise_for_status()
+data = response.json()
+
+print(json.dumps(data, indent=2, ensure_ascii=False)[:2000])
+```
+
+### TypeScript example
+
+```typescript
+type BestBuyReviews = {
+  results?: {
+    sku?: string;
+    body?: string;
+    title?: string;
+    author?: string;
+    images?: string[];
+    rating?: number;
+    region?: string;
+    review_id?: string;
+    days_owned?: number;
+    product_url?: string;
+    product_name?: string;
+    submitted_at?: string;
+    helpful_count?: number;
+    is_recommended?: boolean;
+    is_incentivized?: boolean;
+    not_helpful_count?: number;
+    is_verified_purchase?: boolean;
+  }[];
+  pagination?: {
+    next?: string;
+    page?: number;
+    per_page?: number;
+    total_pages?: number;
+    total_results?: number;
+  };
+};
+
+const params = new URLSearchParams({
+  "query": "https://www.bestbuy.com/product/google-nest-doorbell-wired-3rd-gen-latest-model-2k-video-and-gemini-hazel/J39TC8J8W5/sku/12104931/reviews",
+});
+
+const response = await fetch(`https://api.piloterr.com/v2/bestbuy/product/reviews?${params}`, {
+  headers: { "x-api-key": process.env.PILOTERR_API_KEY! },
+});
+if (!response.ok) throw new Error(`Piloterr error ${response.status}: ${await response.text()}`);
+
+const data = (await response.json()) as BestBuyReviews;
+
+console.log(JSON.stringify(data, null, 2).slice(0, 2000));
+```
+
+<details>
+<summary><b>POST variant</b></summary>
+
+```http
+POST https://api.piloterr.com/v2/bestbuy/product/reviews
+x-api-key: YOUR_API_KEY
+Content-Type: application/json
+
+{"query": "https://www.bestbuy.com/product/google-nest-doorbell-wired-3rd-gen-latest-model-2k-video-and-gemini-hazel/J39TC8J8W5/sku/12104931/reviews"}
+```
+</details>
+
+### Output example
+
+Example response from the API reference, abridged — real values depend on the page you scrape.
+
+```json
+{
+  "results": [
+    {
+      "sku": "6642763",
+      "body": "Great doorbell with excellent 2K video quality. The picture is sharp day and night, motion detection is accurate, and alerts are fast and…",
+      "title": "Google - Nest Doorbell (wired, 3rd gen)",
+      "author": "example",
+      "images": [
+        "https://pisces.bbystatic.com/image2/BestBuy_US/ugc/photos/thumbnail/1456b7b0bb89940e15b132d7a564bf06.jpg"
+      ],
+      "rating": 5,
+      "region": "com",
+      "review_id": "db6638f9-ba34-3be3-a3b2-732603c78ea8",
+      "days_owned": 49,
+      "product_url": "https://www.bestbuy.com/product/google-nest-doorbell-wired-3rd-gen-latest-model-2k-video-and-gemini-hazel/J39TC8J8W5",
+      "product_name": "Google - Nest Doorbell (wired, 3rd gen) - Latest Model - 2K Video and Gemini - Hazel",
+      "submitted_at": "2025-12-28T09:51:35.000-06:00",
+      "helpful_count": 0,
+      "is_recommended": true,
+      "is_incentivized": true,
+      "not_helpful_count": 0,
+      "is_verified_purchase": true
+    }
+  ],
+  "pagination": {
+    "next": "https://www.bestbuy.com/product/google-nest-doorbell-wired-3rd-gen-latest-model-2k-video-and-gemini-hazel/J39TC8J8W5/sku/12104931/reviews…",
+    "page": 1,
+    "per_page": 20,
+    "total_pages": 19,
+    "total_results": 365
+  }
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|---|---|---|
+| `results[]` | object[] |  |
+| `results[].sku` | string |  |
+| `results[].body` | string |  |
+| `results[].title` | string |  |
+| `results[].author` | string |  |
+| `results[].images` | string[] |  |
+| `results[].rating` | integer |  |
+| `results[].region` | string |  |
+| `results[].review_id` | string |  |
+| `results[].days_owned` | integer |  |
+| `results[].product_url` | string |  |
+| `results[].product_name` | string |  |
+| `results[].submitted_at` | string |  |
+| `results[].helpful_count` | integer |  |
+| `results[].is_recommended` | boolean |  |
+| `results[].is_incentivized` | boolean |  |
+| `results[].not_helpful_count` | integer |  |
+| `results[].is_verified_purchase` | boolean |  |
+| `pagination` | object |  |
+| `pagination.next` | string |  |
+| `pagination.page` | integer |  |
+| `pagination.per_page` | integer |  |
+| `pagination.total_pages` | integer |  |
+| `pagination.total_results` | integer |  |
+
 ## Best Buy Search API
 
 Search Best Buy US or Canada by keyword or search URL. Returns product listings with price, rating and pagination via browser rendering.
@@ -316,15 +480,15 @@ Example response from the API reference, abridged — real values depend on the 
 
 Ready-to-run examples live in the [`examples/`](examples) folder. Each one reads your key from the `PILOTERR_API_KEY` environment variable.
 
-| Language | Product | Search |
-|---|---|---|
-| cURL (Bash) | [`product`](examples/curl/product.sh) | [`search`](examples/curl/search.sh) |
-| PHP | [`product`](examples/php/product.php) | [`search`](examples/php/search.php) |
-| C# | [`product`](examples/csharp/Product.cs) | [`search`](examples/csharp/Search.cs) |
-| Go | [`product`](examples/go/product.go) | [`search`](examples/go/search.go) |
-| Java | [`product`](examples/java/ProductExample.java) | [`search`](examples/java/SearchExample.java) |
-| Ruby | [`product`](examples/ruby/product.rb) | [`search`](examples/ruby/search.rb) |
-| Node.js | [`product`](examples/nodejs/product.mjs) | [`search`](examples/nodejs/search.mjs) |
+| Language | Product | Reviews | Search |
+|---|---|---|---|
+| cURL (Bash) | [`product`](examples/curl/product.sh) | [`product-reviews`](examples/curl/product_reviews.sh) | [`search`](examples/curl/search.sh) |
+| PHP | [`product`](examples/php/product.php) | [`product-reviews`](examples/php/product_reviews.php) | [`search`](examples/php/search.php) |
+| C# | [`product`](examples/csharp/Product.cs) | [`product-reviews`](examples/csharp/ProductReviews.cs) | [`search`](examples/csharp/Search.cs) |
+| Go | [`product`](examples/go/product.go) | [`product-reviews`](examples/go/product_reviews.go) | [`search`](examples/go/search.go) |
+| Java | [`product`](examples/java/ProductExample.java) | [`product-reviews`](examples/java/ProductReviewsExample.java) | [`search`](examples/java/SearchExample.java) |
+| Ruby | [`product`](examples/ruby/product.rb) | [`product-reviews`](examples/ruby/product_reviews.rb) | [`search`](examples/ruby/search.rb) |
+| Node.js | [`product`](examples/nodejs/product.mjs) | [`product-reviews`](examples/nodejs/product_reviews.mjs) | [`search`](examples/nodejs/search.mjs) |
 
 ## Practical use cases
 
@@ -354,11 +518,11 @@ No. Piloterr handles rendering, proxy rotation and retries on its side. You only
 
 ### How much does a request cost?
 
-Credits per call: `/v2/bestbuy/product` **2**, `/v2/bestbuy/search` **2**. See the [Piloterr website](https://www.piloterr.com) for plans.
+Credits per call: `/v2/bestbuy/product` **2**, `/v2/bestbuy/product/reviews` **2**, `/v2/bestbuy/search` **2**. See the [Piloterr website](https://www.piloterr.com) for plans.
 
 ### What data does the Best Buy API return?
 
-Each endpoint returns structured JSON: **Best Buy Product** — `sku`, `url`, `brand`, `price`, `title`, `images`; **Best Buy Search** — `results[]`, `results[].url`, `results[].type`, `results[].price`, `results[].title`, `results[].currency`.
+Each endpoint returns structured JSON: **Best Buy Product** — `sku`, `url`, `brand`, `price`, `title`, `images`; **Best Buy Reviews** — `results[]`, `results[].sku`, `results[].body`, `results[].title`, `results[].author`, `results[].images`; **Best Buy Search** — `results[]`, `results[].url`, `results[].type`, `results[].price`, `results[].title`, `results[].currency`.
 
 ### How do I paginate Best Buy results?
 
